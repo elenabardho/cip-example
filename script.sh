@@ -116,6 +116,9 @@ for ((cnt=1; cnt<=num; cnt++)); do
 
     cardano-cli conway transaction submit \
     --tx-file "$stake_deleg_dir/stake-pool-deleg$cnt.signed"
+
+    tx_id=$(cardano-cli conway transaction txid --tx-file "$stake_deleg_dir/stake-pool-deleg$cnt.signed")
+    echo "Transaction ID for stake pool delegation $cnt: $tx_id"
     read -p "Press [Enter] key to continue ..."
 done
 
@@ -131,21 +134,24 @@ cardano-cli conway governance drep id \
 
  #Register the drep
  cardano-cli conway governance drep registration-certificate \
- --drep-key-hash "$(cat $keys_dir/drep/drep2.id)" \
+ --drep-key-hash "$(cat $keys_dir/drep/drep.id)" \
  --key-reg-deposit-amt "$(cardano-cli conway query gov-state | jq -r .currentPParams.dRepDeposit)" \
- --out-file $txs_drep_dir/drep-register2.cert
+ --drep-metadata-url "https://ipfs.io/ipfs/bafkreiaebdt43kqssaajkcpbg7wab5vq4g6e5kzwf4pals74lqk744wjrq" \
+ --drep-metadata-hash "0a9cc483c16fcf5e1d04e35f6e25695952a2d2bc0c86897544d01c342775681c" \
+ --check-drep-metadata-hash \
+ --out-file $txs_drep_dir/drep-register-update.cert
 
 cardano-cli conway transaction build \
  --witness-override 2 \
  --tx-in $(cardano-cli conway query utxo --address $(cat ../smart-contracts/tests/payment.addr) --out-file  /dev/stdout | jq -r 'keys[0]') \
  --change-address $(cat ../smart-contracts/tests/payment.addr) \
- --certificate-file $txs_drep_dir/drep-register2.cert \
+ --certificate-file $txs_drep_dir/drep-register.cert \
  --out-file $txs_drep_dir/drep-reg-tx.unsigned
 
  # Sign the transaction with drep key
 cardano-cli conway transaction sign \
  --tx-body-file $txs_drep_dir/drep-reg-tx.unsigned \
- --signing-key-file $keys_dir/drep/drep2.skey \
+ --signing-key-file $keys_dir/drep/drep.skey \
  --signing-key-file '/home/ebardo/cardano/smart-contracts/tests/payment.skey' \
  --out-file $txs_drep_dir/drep-reg-tx.signed
 
@@ -156,7 +162,7 @@ cardano-cli conway transaction sign \
   --out-file $txs_drep_dir/drep-reg-tx.fully-signed
 
 cardano-cli conway transaction submit \
- --tx-file $txs_drep_dir/drep-reg-tx.fully-signed
+ --tx-file $txs_drep_dir/drep-reg-tx.signed
 
 # ======================================================Delegate to a Drep=================================================
 #Delegate to the drep created
@@ -196,21 +202,45 @@ echo $(cardano-cli conway transaction txid --tx-file ./txs/stake/vote-deleg/vote
 read -p "Press [Enter] key to continue to the next delegation..."
 done
 
+#=================================================Withdraw rewards + donate to a dRep=========================================================
+
+cardano-cli conway transaction build-raw \
+ --tx-in 6709d5d4fa3b6c526879ab99cc50c67938ca6dfd1382838aed554dc4e90806c3#5 \
+ --withdrawal stake_test1uqgykl0j0tdn689syxuasmg35hfjaqnd06t2fav38r7fyqcc0w7lk+3382884997 \
+ --tx-out addr_test1vqwq0fz83ux6rwvm6r2fmegtzhrnl4tk00h74hhrwwje69qez9ftk+507432749\
+ --tx-out addr_test1qphtuq30j8tvmq0v38l9zye7sun36n6nzyygcc2mqds2sdssfd7ly7km85wtqgdempk3rfwn96px6l5k5n6ezw8ujgps20sdh8+2879452248 \
+ --fee 1000000 \
+ --out-file withdrawal-elena.unsigned
+
+cardano-cli conway transaction sign \
+
+
 ''''' 
 Test by querying :
 1- Drep info , delegators and check the compensation % if any 
 2- Stake adresses that have delegated to the drep , what % have opt in for compensation
 '''''
-# cardano-cli conway transaction build \
-#  --tx-in $(cardano-cli conway query utxo --address $(cat ./keys/stake3/payment.addr)  --out-file  /dev/stdout | jq -r 'keys[0]') \
-#  --change-address $(cat ./keys/stake3/payment.addr) \
-#  --tx-out $(cat ../smart-contracts/tests/payment.addr)+9997000000 \
-#  --out-file ./txs/stake/query-utxo3.unsigned
 
-#  cardano-cli conway transaction sign \
-#     --tx-body-file ./txs/stake/query-utxo3.unsigned \
-#     --signing-key-file ./keys/stake3/payment.skey\
-#     --out-file ./txs/stake/query-utxo3.signed
+# ======================================================Update a Drep=================================================
+cardano-cli conway governance drep update-certificate \
+    --drep-verification-key-file ./keys/drep/drep2.vkey \
+    --drep-metadata-url "https://ipfs.io/ipfs/bafkreia7qqyqzpv2rpcwfehhwamn4slpmuhymtw3anj6o32bbteq4mglpq" \
+    --drep-metadata-hash "e84645190e9c04689261536011c0782027476ff0280d796f2c7474077e72f3ed" \
+    --check-drep-metadata-hash \
+    --out-file $txs_drep_dir/drep-register-update2.cert
 
-# cardano-cli conway transaction submit \
-#     --tx-file ./txs/stake/query-utxo3.signed
+cardano-cli conway transaction build \
+ --witness-override 2 \
+ --tx-in $(cardano-cli conway query utxo --address $(cat ../smart-contracts/tests/payment.addr) --out-file  /dev/stdout | jq -r 'keys[0]') \
+ --change-address $(cat ../smart-contracts/tests/payment.addr) \
+ --certificate-file $txs_drep_dir/drep-register-update2.cert \
+ --out-file $txs_drep_dir/drep-reg-tx2.unsigned
+
+ # Sign the transaction with drep key
+cardano-cli conway transaction sign \
+ --tx-body-file $txs_drep_dir/drep-reg-tx2.unsigned \
+ --signing-key-file $keys_dir/drep/drep2.skey \
+ --signing-key-file '/home/ebardo/cardano/smart-contracts/tests/payment.skey' \
+ --out-file $txs_drep_dir/drep-reg-tx2.signed
+
+ cardano-cli conway transaction submit  --tx-file $txs_drep_dir/drep-reg-tx2.signed

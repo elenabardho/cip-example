@@ -3,3 +3,4 @@ backup/
 .vkey
 .skey
 txs/
+test/
