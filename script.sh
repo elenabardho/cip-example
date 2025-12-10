@@ -214,6 +214,20 @@ cardano-cli conway transaction build-raw \
 
 cardano-cli conway transaction sign \
 
+cardano-cli conway transaction build \
+    --tx-in 058d6f46cbc9ae0495ed9d5fbe03547f6971f7f302f00605def67c845f4fdb16#0 \
+    --withdrawal stake_test1ursa8kegf22wcjqqlc0230rtlemck5lhqycd3u8lattqh2c2ckq5g+700000000000 \
+    --change-address $address \
+    --tx-out 
+
+cardano-cli conway transaction build \
+    --socket-path /Users/elenabardho/.dmtr/tmp/skillful-patience-7gn0eo/cardanonode-opplay.socket \
+    --testnet-magic 2 \
+    --tx-in 09e735369a1782d190dab39c9f7a94bcc9b4faf40f0148c623f96fa4686f063f#0 \
+    --withdrawal stake_test1uqgykl0j0tdn689syxuasmg35hfjaqnd06t2fav38r7fyqcc0w7lk+435725771  \
+    --tx-out addr_test1vqwq0fz83ux6rwvm6r2fmegtzhrnl4tk00h74hhrwwje69qez9ftk+65358865 \
+    --change-address addr_test1qphtuq30j8tvmq0v38l9zye7sun36n6nzyygcc2mqds2sdssfd7ly7km85wtqgdempk3rfwn96px6l5k5n6ezw8ujgps20sdh8 \
+    --out-file ./cip-example/tx.unsigned
 
 ''''' 
 Test by querying :
