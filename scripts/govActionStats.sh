@@ -19,6 +19,7 @@ NC='\033[0m' # No Color
 
 # CSV file path (adjust if needed)
 CSV_FILE="${1:-.}/inputOutputs/stakeAccountList.csv"
+echo "CSV_FILE: $CSV_FILE"
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║         Cardano Governance Actions Statistics                  ║${NC}"
@@ -36,10 +37,10 @@ if [ -z "$DATA" ]; then
 fi
 
 # Filter for epoch 531 and above
-DATA=$(echo "$DATA" | jq '[.[] | select(.proposed_epoch >= 531)]')
+DATA=$(echo "$DATA" | jq '[.[] | select(.proposed_epoch >= 531 and .proposed_epoch < 605)]')
 
 echo -e "${GREEN}✓ Data fetched successfully${NC}"
-echo -e "${GREEN}✓ Filtered for Epoch 531 and above${NC}"
+echo -e "${GREEN}✓ Filtered for Epoch 531 till 605${NC}"
 echo ""
 
 #####################################################################
@@ -219,8 +220,8 @@ echo -e "${MAGENTA}════════════════════�
 echo ""
 
 # Intersect signature patterns - looking for "Intersect" or "intersect" in authors/signatures
-INTERSECT_SIGNED=$(echo "$DATA" | jq '[.[] | select(.meta_json != null and (.meta_json.authors[] // empty | .name | ascii_downcase | contains("intersect")))] | length')
-INTERSECT_SIGNED_RATIFIED=$(echo "$DATA" | jq '[.[] | select(.meta_json != null and (.meta_json.authors[] // empty | .name | ascii_downcase | contains("intersect")) and .ratified_epoch != null)] | length')
+INTERSECT_SIGNED=$(echo "$DATA" | jq '[.[] | select(.meta_json != null and ((.meta_json.authors // [])[] | .name | ascii_downcase | contains("intersect")))] | length')
+INTERSECT_SIGNED_RATIFIED=$(echo "$DATA" | jq '[.[] | select(.meta_json != null and ((.meta_json.authors // [])[] | .name | ascii_downcase | contains("intersect")) and .ratified_epoch != null)] | length')
 
 echo -e "${BLUE}Governance actions with Intersect signatures:${NC}  $INTERSECT_SIGNED"
 echo -e "${BLUE}Ratified (Intersect signed):${NC}                 $INTERSECT_SIGNED_RATIFIED"
@@ -244,8 +245,8 @@ display_signed_type_breakdown() {
     local type_value=$2
     
     # Overall stats for signed
-    local signed_of_type=$(echo "$DATA" | jq "[.[] | select(.meta_json != null and (.meta_json.authors[] // empty | .name | ascii_downcase | contains(\"intersect\")) and .proposal_type == \"$type_value\")] | length")
-    local signed_ratified_of_type=$(echo "$DATA" | jq "[.[] | select(.meta_json != null and (.meta_json.authors[] // empty | .name | ascii_downcase | contains(\"intersect\")) and .proposal_type == \"$type_value\" and .ratified_epoch != null)] | length")
+    local signed_of_type=$(echo "$DATA" | jq "[.[] | select(.meta_json != null and ((.meta_json.authors // [])[] | .name | ascii_downcase | contains(\"intersect\")) and .proposal_type == \"$type_value\")] | length")
+    local signed_ratified_of_type=$(echo "$DATA" | jq "[.[] | select(.meta_json != null and ((.meta_json.authors // [])[] | .name | ascii_downcase | contains(\"intersect\")) and .proposal_type == \"$type_value\" and .ratified_epoch != null)] | length")
     
     # Compare with Intersect submitted
     local intersect_submitted_of_type=$(echo "$INTERSECT_DATA" | jq "[.[] | select(.proposal_type == \"$type_value\")] | length")
@@ -311,3 +312,27 @@ echo -e "${MAGENTA}════════════════════�
 echo -e "${GREEN}✓ Analysis complete!${NC}"
 echo -e "${MAGENTA}═══════════════════════════════════════════════════════════════${NC}"
 
+
+
+# Function to display Intersect GAs by type
+display_all_gas_by_type() {
+    local type_name=$1
+    local type_value=$2
+    
+    local type_gas=$(echo "$DATA" | jq --arg type "$type_value" '[.[] | select(.proposal_type == $type)] | sort_by(.proposal_id)')
+    local type_count=$(echo "$type_gas" | jq 'length')
+    
+    if [ "$type_count" -gt 0 ]; then
+        echo -e "${BLUE}${type_name}:${NC} ($type_count)"
+        echo "$type_gas" | jq -r '.[] | "  \(.proposal_id) - \(.meta_json.body.title // "N/A")"'
+        echo ""
+    fi
+}
+
+display_all_gas_by_type "Info Actions" "InfoAction"
+display_all_gas_by_type "Parameter Updates" "ParameterChange"
+display_all_gas_by_type "Constitution Updates" "NewConstitution"
+display_all_gas_by_type "Committee Changes" "NewCommittee"
+display_all_gas_by_type "Hard Fork Initiations" "HardForkInitiation"
+display_all_gas_by_type "Treasury Withdrawals" "TreasuryWithdrawals"
+display_all_gas_by_type "No Confidence Votes" "NoConfidence"
