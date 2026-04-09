@@ -135,9 +135,18 @@ else
     exit 1
 fi
 
+# Calculate total sum of output amounts
+if [[ "$file_ext" == "json" ]]; then
+    total_lovelace=$(jq '[.[].lovelace_amount] | add' "$payment_details_list_file")
+elif [[ "$file_ext" == "csv" ]]; then
+    total_lovelace=$(tail -n +3 "$payment_details_list_file" | tr -d '\r\t' | awk -F',' '{sum += $2} END {printf "%.0f", sum}')
+fi
+total_ada=$(echo "scale=6; $total_lovelace / 1000000" | bc)
+
 # Display what will be sent
 echo "Transaction outputs:"
 echo "$TX_OUT"
+echo -e "${GREEN}Total output amount: ${BRIGHTWHITE}$total_lovelace lovelace ${NC}(${BRIGHTWHITE}$total_ada ADA${NC})"
 
 # Build and execute the transaction
 metadata_args=""
