@@ -109,7 +109,7 @@ if [ "$metadata_file_input" != "" ] && [ ! -f "$metadata_file_input" ]; then
 fi
 
 
-export PAYMENT_ADDR='addr1vxejtmtvu46jsfrq4ptfxchwyr0g42945dwpncqp6t9hdesyergrz'
+export PAYMENT_ADDR='addr1qx93k28kzzu4fng49cfcj8w7m8px36wf9z8j94638lu8cw574gazl7xgwlxg4uxe4ytwnttj8qw489waumt82gx5jdtqwh8hn0'
 
 utxo_list=$(cardano-cli conway query utxo \
   --mainnet \
@@ -118,7 +118,8 @@ utxo_list=$(cardano-cli conway query utxo \
 
 echo "UTxO list for address $PAYMENT_ADDR:$utxo_list"
 
-read -p "Which utxo you want to use for the transaction? (format: txhash#txix): " selected_utxo
+read -p "Which utxo you want to use for the transaction? (format: txhash#txix): " selected_utxo_1
+read -p "Select a second utxo" selected_utxo_2
 
 # Extract wallet address and lovelace amount to build --tx-out args
 # Supports CSV and JSON input files
@@ -157,7 +158,8 @@ fi
 cardano-cli conway transaction build \
   --socket-path "$CARDANO_NODE_SOCKET_PATH" \
   --mainnet \
-  --tx-in "$selected_utxo" \
+  --tx-in "$selected_utxo_1" \
+  --tx-in "$selected_utxo_2" \
   $TX_OUT \
   --change-address "$PAYMENT_ADDR" \
   $metadata_args \

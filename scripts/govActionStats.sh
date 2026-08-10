@@ -37,7 +37,7 @@ if [ -z "$DATA" ]; then
 fi
 
 # Filter for epoch 531 and above
-DATA=$(echo "$DATA" | jq '[.[] | select(.proposed_epoch >= 531 and .proposed_epoch < 605)]')
+DATA=$(echo "$DATA" | jq '[.[] | select(.proposed_epoch < 635)]')
 
 echo -e "${GREEN}✓ Data fetched successfully${NC}"
 echo -e "${GREEN}✓ Filtered for Epoch 531 till 605${NC}"
@@ -109,14 +109,18 @@ for i in "${!INTERSECT_ACCOUNTS[@]}"; do
 done
 
 # Additional Intersect governance action IDs
-INTERSECT_GOV_IDS=("gov_action1q0m8z7glm9cprucwf44hdjdfra8khnakpm3hu5ueh929hvljw4aqqzuxfxz" "gov_action1jr84r96lnsvu9yd6c0jhxe9gj5r7vnd2pgkntc6klplxdpyzz4tqqc9uldx")
+INTERSECT_GOV_IDS=("gov_action1q0m8z7glm9cprucwf44hdjdfra8khnakpm3hu5ueh929hvljw4aqqzuxfxz" "gov_action1jr84r96lnsvu9yd6c0jhxe9gj5r7vnd2pgkntc6klplxdpyzz4tqqc9uldx" )
 
 # Add governance IDs to filter
 for id in "${INTERSECT_GOV_IDS[@]}"; do
     ACCOUNT_FILTER="$ACCOUNT_FILTER or .proposal_id == \"$id\""
 done
 
-# Filter data for Intersect accounts and governance IDs
+# Add filter for actions signed by Intersect public key in metadata
+INTERSECT_PUBKEY="05568f86955e65c1a59df5ac1985449b167c3828dccd00b3da9df36a1cf1c743"
+ACCOUNT_FILTER="$ACCOUNT_FILTER or (.meta_json != null and ((.meta_json.authors // [])[] | .witness.publicKey) == \"$INTERSECT_PUBKEY\")"
+
+# Filter data for Intersect accounts, governance IDs, and metadata public key
 INTERSECT_DATA=$(echo "$DATA" | jq "[.[] | select($ACCOUNT_FILTER)]")
 
 # Intersect counts
